@@ -2,7 +2,7 @@
 
 # 🚀 QA Autopilot
 
-### L'anti usine à gaz — Diagnostic IA pour Playwright
+### Plugin pytest — Diagnostic IA des échecs Playwright en temps réel
 
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Playwright](https://img.shields.io/badge/Playwright-Compatible-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)](https://playwright.dev)
@@ -10,18 +10,6 @@
 [![pytest](https://img.shields.io/badge/pytest-Plugin-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)](https://pytest.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 [![Lines](https://img.shields.io/badge/Lines_of_Code-~600-brightgreen?style=for-the-badge)]()
-
-<br/>
-
-**~600 lignes de Python** remplacent **23 000 lignes** d'usine à gaz MCP.
-
-Zéro config. Un flag. Diagnostic immédiat.
-
-<br/>
-
-```
-pytest tests/ --qa-autopilot
-```
 
 <br/>
 
@@ -69,6 +57,14 @@ Résultats sur une suite de **7 tests pièges** conçus pour piéger les outils 
 > **6/6 diagnostics corrects à 95% de confiance** — le 7ème test PASSED (pas de diagnostic nécessaire).
 
 ---
+
+## ⚠️ Limitations
+
+> [!CAUTION]
+> **Tests de +200 lignes :** le contexte envoyé à l'IA est volontairement tronqué.
+> Un test E2E doit rester court — un scénario, une responsabilité, moins de 50 lignes.
+> Au-delà, c'est un problème de conception, pas de diagnostic.
+> Refactorisez vos tests avant de chercher la cause d'un échec.
 
 ## 📦 Installation
 
@@ -338,7 +334,5 @@ MIT — Fais-en ce que tu veux.
 *QA Architect · 20+ ans d'expérience · Katalon Top Partner Europe*
 
 [![Newsletter](https://img.shields.io/badge/Newsletter-Bonnes_Pratiques_QA-blue?style=flat-square)](https://cleanqa.substack.com)
-[![Podcast](https://img.shields.io/badge/Podcast-Qalisty-purple?style=flat-square)](https://qalisty.com)
-[![QA OPS LAB](https://img.shields.io/badge/SaaS-QA_OPS_LAB-orange?style=flat-square)](https://qaopslab.com)
-
+![QA OPS LAB](https://img.shields.io/badge/QA_OPS_LAB-Coming%20Soon-orange?style=flat-square)
 </div>

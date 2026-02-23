@@ -1,3 +1,10 @@
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 # conftest.py — Import des hooks QA Autopilot
 #
 # Si qa_autopilot est installé via pip, les hooks sont

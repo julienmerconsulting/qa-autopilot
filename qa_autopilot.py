@@ -444,8 +444,8 @@ class QAInterceptor:
         return [asdict(r) for r in self._requests.values() if r.failed]
 
     def get_console_errors(self) -> list[dict]:
-        """Erreurs et warnings console"""
-        return [asdict(c) for c in self._console if c.type in ("error", "warning")]
+        """Erreurs console uniquement"""
+        return [asdict(c) for c in self._console if c.type == "error"]
 
     def take_screenshot(self) -> Optional[str]:
         """Screenshot base64 PNG de l'état courant"""
@@ -976,6 +976,17 @@ except ImportError:
     pass  # pytest pas installé → mode import direct uniquement
 
 
+
+def build_pytest_command(user_args: list[str], python_executable: str) -> list[str]:
+    """Construit la commande pytest utilisée par le mode CLI."""
+    return [
+        python_executable, "-m", "pytest",
+        "--qa-autopilot",
+        "-v",
+        "--tb=short",
+        *user_args,
+    ]
+
 # ============================================================
 # CLI — python qa_autopilot.py tests/test_whatever.py
 # ============================================================
@@ -1008,20 +1019,7 @@ def main():
         sys.exit(0)
 
     # Construire la commande pytest avec notre plugin
-    conftest = Path(__file__).parent / "conftest_qa.py"
-    cmd = [
-        sys.executable, "-m", "pytest",
-        "--qa-autopilot",
-        "-v",
-        "--tb=short",
-    ]
-
-    # Si notre conftest existe à côté, l'utiliser
-    if conftest.exists():
-        cmd.extend(["-c", str(conftest)])
-
-    # Passer tous les arguments utilisateur
-    cmd.extend(sys.argv[1:])
+    cmd = build_pytest_command(sys.argv[1:], sys.executable)
 
     # Ajouter le répertoire courant au PYTHONPATH pour l'import
     env = os.environ.copy()

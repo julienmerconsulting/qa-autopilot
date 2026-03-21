@@ -40,7 +40,30 @@ Variables d'environnement :
 
 import json
 import os
+import locale
 import time
+try:
+    from deep_translator import GoogleTranslator as _GT
+    def _t(text):
+        """Traduit un label dans la langue active — silencieux si échec"""
+        lang = get_qa_lang()
+        if not lang or lang.startswith("fr") or lang.startswith("en"):
+            return text
+        try:
+            target = lang.replace("_", "-").split("-")[0]  # zh_CN → zh
+            if lang.lower().startswith("zh"):
+                target = "zh-CN"
+            return _GT(source="auto", target=target).translate(text)
+        except Exception:
+            return text
+except ImportError:
+    def _t(text):
+        return text
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv optionnel — pas bloquant sans lui
 import base64
 import traceback
 from datetime import datetime
@@ -53,9 +76,50 @@ from typing import Optional
 # CONFIGURATION
 # ============================================================
 
-LLM_MODEL = os.getenv("QA_MODEL", "gpt-4.1-mini")
+LLM_MODEL = os.getenv("QA_MODEL", "gpt-4.1-mini")  # ou deepseek-chat, ollama, etc.
 INCLUDE_SCREENSHOT = os.getenv("QA_SCREENSHOT", "0") == "1"
 REPORT_DIR = Path(os.getenv("QA_REPORT_DIR", "qa-reports"))
+
+# Langue des diagnostics IA
+# QA_LANG=off       → le LLM décide seul (anglais par défaut)
+# QA_LANG=zh_CN     → force le chinois
+# QA_LANG=auto      → détection automatique de la locale système (défaut)
+# Peut aussi être overridé par --qa-lang en paramètre pytest
+_QA_LANG_OVERRIDE = None  # sera setté par pytest_configure si --qa-lang fourni
+
+def get_qa_lang():
+    """Retourne la langue active — priorité : --qa-lang CLI > QA_LANG env > locale système"""
+    import sys
+    # Lire directement sys.argv — fiable quelle que soit la façon dont les hooks sont chargés
+    for i, arg in enumerate(sys.argv):
+        if arg.startswith("--qa-lang="):
+            val = arg.split("=", 1)[1]
+            return None if val == "off" else (locale.getdefaultlocale()[0] or "en_US") if val == "auto" else val
+        if arg == "--qa-lang" and i + 1 < len(sys.argv):
+            val = sys.argv[i + 1]
+            return None if val == "off" else (locale.getdefaultlocale()[0] or "en_US") if val == "auto" else val
+    # Fallback sur variable d'environnement
+    val = os.getenv("QA_LANG", "auto")
+    if val == "off":
+        return None
+    if val == "auto":
+        return locale.getdefaultlocale()[0] or "en_US"
+    return val
+
+def get_lang_name(lang_code):
+    """Retourne le nom complet de la langue depuis son code — via deep_translator"""
+    if not lang_code:
+        return None
+    try:
+        from deep_translator import GoogleTranslator
+        # Normaliser le code : fr_FR → fr, zh_CN → zh-CN
+        code = lang_code.replace("_", "-")
+        code_to_name = {v: k for k, v in GoogleTranslator().get_supported_languages(as_dict=True).items()}
+        # Essai exact, puis prefix
+        name = code_to_name.get(code) or code_to_name.get(code.split("-")[0])
+        return name.title() if name else lang_code
+    except Exception:
+        return lang_code
 MAX_NETWORK_BODY = 2000      # chars max pour body requête/réponse
 MAX_CONSOLE_ENTRIES = 50      # dernières entrées console gardées
 MAX_DOM_ACTIONS = 200         # actions DOM max dans le contexte IA
@@ -534,30 +598,60 @@ class QAInterceptor:
         icon = CATEGORY_ICONS.get(category, "❓")
 
         print(f"\n{'='*60}")
-        print(f"  🔍 QA AUTOPILOT — DIAGNOSTIC")
+        print(f"  🔍 {_t('QA AUTOPILOT — DIAGNOSTIC')}")
         print(f"{'='*60}")
-        print(f"  Test    : {ctx.test_file}")
-        print(f"  Erreur  : {ctx.error_message[:120]}")
-        print(f"  Page    : {ctx.page_url}")
-        print(f"  Cause   : {diagnosis.get('root_cause', 'N/A')}")
-        print(f"  Type    : {icon} {category}")
-        print(f"  Confiance: {'🟢' if conf > 0.7 else '🟡' if conf > 0.4 else '🔴'} {conf:.0%}")
+        print(f"  {_t('Test')}    : {ctx.test_file}")
+        print(f"  {_t('Erreur')}  : {ctx.error_message[:120]}")
+        print(f"  {_t('Page')}    : {ctx.page_url}")
+        print(f"  {_t('Cause')}   : {diagnosis.get('root_cause', 'N/A')}")
+        print(f"  {_t('Type')}    : {icon} {category}")
+        print(f"  {_t('Confiance')}: {'🟢' if conf > 0.7 else '🟡' if conf > 0.4 else '🔴'} {conf:.0%}")
+
+        # ── Traceback filtré — ligne de test + erreur finale uniquement ──
+        if ctx.error_traceback:
+            tb_lines = ctx.error_traceback.strip().split("\n")
+            test_line = None
+            error_line = None
+            code_line = None
+            for i, line in enumerate(tb_lines):
+                # Ligne du fichier de test
+                if ctx.test_file and ctx.test_file in line and "File" in line:
+                    test_line = line.strip()
+                    if i + 1 < len(tb_lines):
+                        code_line = tb_lines[i + 1].strip()
+                # Ligne d'erreur — contient "Error:" ou "AssertionError" etc.
+                if ("Error:" in line or "AssertionError:" in line or "Exception:" in line) and not line.startswith(" " * 8):
+                    error_line = line.strip()
+            # Fallback : dernière ligne non vide
+            if not error_line:
+                for line in reversed(tb_lines):
+                    if line.strip():
+                        error_line = line.strip()
+                        break
+            if test_line or error_line:
+                print(f"\n  📋 {_t('Traceback')} :")
+                if test_line:
+                    print(f"     📍 {test_line}")
+                if code_line:
+                    print(f"        → {code_line}")
+                if error_line:
+                    print(f"     ❌ {error_line}")
 
         # ── Fix suggéré (si ce n'est pas un app_bug) ──
         if category != "app_bug":
             fix = diagnosis.get("suggested_fix", {})
             if fix.get("description"):
-                print(f"\n  💡 FIX SUGGÉRÉ :")
+                print(f"\n  💡 {_t('FIX SUGGÉRÉ')} :")
                 print(f"     {fix['description']}")
             if fix.get("code"):
-                print(f"\n  📝 CODE :")
+                print(f"\n  📝 {_t('CODE')} :")
                 for line in fix["code"].split("\n"):
                     print(f"     {line}")
 
         # ── Sélecteurs à risque ──
         risky = diagnosis.get("selectors_at_risk", [])
         if risky:
-            print(f"\n  ⚠️ SÉLECTEURS FRAGILES :")
+            print(f"\n  ⚠️ {_t('SÉLECTEURS FRAGILES')} :")
             for s in risky:
                 print(f"     • {s}")
 
@@ -569,13 +663,13 @@ class QAInterceptor:
             with open(jira_file, "w", encoding="utf-8") as f:
                 f.write(jira_md)
 
-            print(f"\n  🐛 APPLICATION BUG DÉTECTÉ — Ne pas modifier le test !")
-            print(f"     Titre  : {jira.get('title', 'N/A')}")
-            print(f"     Priorité : {jira.get('priority', 'N/A')}")
-            print(f"     Steps  : {len(jira.get('steps_to_reproduce', []))} étapes")
-            print(f"\n  📋 Ticket Jira → {jira_file}")
+            print(f"\n  🐛 {_t('APPLICATION BUG DÉTECTÉ')} — {_t('Ne pas modifier le test')} !")
+            print(f"     {_t('Titre')}  : {jira.get('title', 'N/A')}")
+            print(f"     {_t('Priorité')} : {jira.get('priority', 'N/A')}")
+            print(f"     {_t('Steps')}  : {len(jira.get('steps_to_reproduce', []))} {_t('étapes')}")
+            print(f"\n  📋 {_t('Ticket Jira')} → {jira_file}")
 
-        print(f"\n  📁 Rapport → {report_file}")
+        print(f"\n  📁 {_t('Rapport')} → {report_file}")
         print(f"{'='*60}\n")
 
         return diagnosis
@@ -760,14 +854,17 @@ Ces messages sont la source de vérité n°1. Indices critiques :
   • Si c'est une assertion to_have_title :
     - Compare le titre attendu avec "Actual value" → souvent copier-coller d'un autre test
 
-ÉTAPE 3 — Analyse le CODE du test pour détecter les erreurs logiques.
-  • click() sur un élément qui nécessite dblclick() → l'action passe SANS erreur
-    mais l'événement attendu ne se déclenche pas → l'assertion SUIVANTE fail
-  • fill() puis click() immédiat sans wait → race condition sur éléments dynamiques
-  • locator capturé AVANT un rechargement AJAX puis utilisé APRÈS → stale reference
-  • page.locator("tag") dans un iframe → cherche dans le mauvais frame
-  • Interaction avec un élément sans goto() préalable → page about:blank
-
+ÉTAPE 3 — Détecte les erreurs logiques dans le CODE du test.
+  • L'erreur est sur une assertion expect() ET non sur un click/fill ?
+    → Cherche d'abord wrong_action ou stale_reference AVANT element_obscured.
+  • Le code contient button.click() mais l'événement attendu est déclenché par ondblclick ?
+    → wrong_action (click vs dblclick). L'action passe SANS erreur, c'est l'assertion qui fail.
+  • Le code fait fill("valeur1") puis fill("valeur2") puis utilise un locator capturé avant ?
+    → stale_reference
+  • page.locator("tag") utilisé directement alors qu'il y a un frame_locator ?
+    → iframe_context
+  • Interaction sans goto() préalable → page about:blank
+  
 ═══════════════════════════════════════════════════════════════
 CATÉGORIES DE DIAGNOSTIC (choisis UNE seule)
 ═══════════════════════════════════════════════════════════════
@@ -788,7 +885,9 @@ CATÉGORIES DE DIAGNOSTIC (choisis UNE seule)
                         Indice : "element is not enabled", "disabled" dans le call log
 
 "wrong_action"        — Mauvaise méthode Playwright (click vs dblclick, fill vs type, etc.)
-                        Indice : l'action réussit SANS erreur mais l'assertion suivante fail
+                        Indice PRIORITAIRE : l'erreur est sur expect() PAS sur click/fill.
+                        RÈGLE : si TimeoutError sur une assertion après une action réussie
+                      → vérifie wrong_action EN PREMIER avant element_obscured.
 
 "iframe_context"      — Élément cherché dans le mauvais frame (main vs iframe)
                         Indice : "resolved to N elements" dont certains non visibles, frame_locator absent
@@ -851,14 +950,24 @@ Si category == "app_bug", remplace jira_ticket null par :
 }}"""
 
     try:
-        client = OpenAI()
-        print("\n  🤖 Analyse IA en cours...")
+        # Support multi-provider : OpenAI, DeepSeek, Ollama, ou tout provider compatible API OpenAI
+        # BASE_URL=https://api.deepseek.com  API_KEY=sk-...  QA_MODEL=deepseek-chat
+        # BASE_URL=http://localhost:11434/v1  API_KEY=ollama  QA_MODEL=llama3
+        # Par défaut : OpenAI natif via OPENAI_API_KEY
+        base_url = os.getenv("BASE_URL", None)
+        api_key  = os.getenv("API_KEY") or os.getenv("OPENAI_API_KEY")
+        client = OpenAI(base_url=base_url, api_key=api_key)
+        print(f"\n  🤖 {_t('Analyse IA en cours')}...")
 
         for attempt in range(3):
             response = client.chat.completions.create(
                 model=LLM_MODEL,
                 messages=[
-                    {"role": "system", "content": "Tu es un expert QA automation Playwright. Tu réponds UNIQUEMENT en JSON valide. Pas de markdown, pas de backticks, pas de commentaires."},
+                    {"role": "system", "content": (
+                        "You are a Playwright QA automation expert. "
+                        "Respond ONLY in valid JSON. No markdown, no backticks, no comments."
+                        + (f" CRITICAL LANGUAGE INSTRUCTION: You MUST write ALL text values in the JSON response (root_cause, diagnosis, description, code comments, suggested_fix fields) exclusively in {get_lang_name(get_qa_lang())} language. Do NOT use any other language under any circumstance. This is mandatory and non-negotiable." if get_qa_lang() else "")
+                    )},
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0,
@@ -894,13 +1003,22 @@ def pytest_addoption(parser):
         default=False,
         help="Active le diagnostic IA automatique sur les tests Playwright en échec",
     )
+    parser.addoption(
+        "--qa-lang",
+        action="store",
+        default=None,
+        help="Langue des diagnostics IA : fr_FR, zh_CN, en_US, off, auto (défaut: auto = locale système)",
+    )
 
 
 def pytest_configure(config):
-    """Enregistre le marker qa_autopilot"""
+    """Enregistre le marker qa_autopilot + applique --qa-lang si fourni"""
     config.addinivalue_line(
         "markers", "qa_autopilot: active le diagnostic IA sur ce test"
     )
+    lang_arg = config.getoption("--qa-lang", default=None, skip=True)
+    if lang_arg is not None:
+        os.environ["QA_LANG"] = lang_arg
 
 
 try:

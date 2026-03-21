@@ -5,8 +5,9 @@
 ### Plugin pytest — Diagnostic IA des échecs Playwright en temps réel
 
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![PyPI](https://img.shields.io/badge/PyPI-qa--autopilot-blue?style=for-the-badge&logo=pypi&logoColor=white)](https://pypi.org/project/qa-autopilot/)
 [![Playwright](https://img.shields.io/badge/Playwright-Compatible-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)](https://playwright.dev)
-[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4.1-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com)
+[![LLM](https://img.shields.io/badge/LLM-OpenAI%20%7C%20DeepSeek%20%7C%20Ollama-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com)
 [![pytest](https://img.shields.io/badge/pytest-Plugin-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)](https://pytest.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 [![Lines](https://img.shields.io/badge/Lines_of_Code-~600-brightgreen?style=for-the-badge)]()
@@ -68,14 +69,24 @@ Résultats sur une suite de **7 tests pièges** conçus pour piéger les outils 
 
 ## 📦 Installation
 
+**QA Autopilot est un module Python natif — disponible directement sur PyPI :**
+
 ```bash
 pip install qa-autopilot
+```
+
+C'est tout. Pas de config, pas de serveur, pas de compte. Une ligne.
+
+Avec le chargement automatique du `.env` :
+
+```bash
+pip install qa-autopilot[dotenv]
 ```
 
 Ou depuis les sources :
 
 ```bash
-git clone https://github.com/jmer-consulting/qa-autopilot.git
+git clone https://github.com/julienmerconsulting/qa-autopilot.git
 cd qa-autopilot
 pip install -e .
 ```
@@ -83,14 +94,26 @@ pip install -e .
 ### Prérequis
 
 ```bash
-pip install playwright openai
 playwright install chromium
 ```
 
-### Variable d'environnement
+### Configuration `.env`
+
+Crée un fichier `.env` à la racine de ton projet :
 
 ```bash
-export OPENAI_API_KEY=sk-...
+# OpenAI (défaut)
+OPENAI_API_KEY=sk-...
+
+# Ou DeepSeek
+BASE_URL=https://api.deepseek.com
+API_KEY=sk-...
+QA_MODEL=deepseek-chat
+
+# Ou Ollama local (zéro coût)
+BASE_URL=http://localhost:11434/v1
+API_KEY=ollama
+QA_MODEL=llama3
 ```
 
 ---
@@ -222,7 +245,9 @@ print(diagnosis["category"])
 
 | Variable | Défaut | Description |
 |:---------|:-------|:------------|
-| `OPENAI_API_KEY` | *(obligatoire)* | Clé API OpenAI |
+| `OPENAI_API_KEY` | *(obligatoire si pas de API_KEY)* | Clé API OpenAI |
+| `API_KEY` | *(optionnel)* | Clé pour provider alternatif (DeepSeek, Ollama…) |
+| `BASE_URL` | `None` (OpenAI natif) | URL base du provider LLM |
 | `QA_MODEL` | `gpt-4.1-mini` | Modèle IA à utiliser |
 | `QA_SCREENSHOT` | `0` | `1` pour inclure les screenshots dans le prompt |
 | `QA_REPORT_DIR` | `qa-reports/` | Dossier des rapports |
@@ -318,6 +343,17 @@ Le listener JavaScript injecté dans le navigateur utilise une cascade de sélec
 | 6 | CSS court + `nth-of-type` | `button.primary:nth-of-type(2)` |
 
 Chaque sélecteur est validé pour son unicité dans le DOM. Support Shadow DOM inclus.
+
+---
+
+## 🤝 Contributors
+
+| Contributeur | Contribution |
+|:-------------|:-------------|
+| [Julien Mer](https://github.com/julienmerconsulting) | Auteur original |
+| [@szwnba](https://github.com/szwnba) | Support multi-provider LLM (DeepSeek, Ollama) + traduction CN |
+
+Les contributions sont bienvenues — issues, bug reports, pull requests.
 
 ---
 

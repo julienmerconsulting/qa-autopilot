@@ -7,7 +7,7 @@ __pycache__/
 dist/
 build/
 *.egg
-
+*.bak
 # Virtual environments
 .venv/
 venv/
@@ -33,3 +33,4 @@ Thumbs.db
 # Playwright
 test-results/
 playwright-report/
+oldcode/*

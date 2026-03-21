@@ -1,16 +1,16 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
+requires = ["setuptools>=42,<77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "qa-autopilot"
-version = "1.0.0"
+version = "1.2.0"
 description = "AI-powered diagnostic for Playwright test failures — ~600 lines replace 23K lines of MCP"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.9"
 authors = [
-    {name = "Julien Mer", email = "contact@jmer-consulting.com"},
+    {name = "Julien Mer", email = "contact@julienmerconsulting.com"},
 ]
 keywords = ["qa", "testing", "playwright", "automation", "ai", "diagnostic", "pytest"]
 classifiers = [
@@ -35,16 +35,25 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0.0",
+    "pytest>=8.0.0",
     "pytest-playwright>=0.4.0",
     "pytest-html>=4.0.0",
 ]
+dotenv = [
+    "python-dotenv>=1.0.0",
+]
+all = [
+    "pytest>=8.0.0",
+    "pytest-playwright>=0.4.0",
+    "pytest-html>=4.0.0",
+    "python-dotenv>=1.0.0",
+]
 
 [project.urls]
-Homepage = "https://github.com/jmer-consulting/qa-autopilot"
-Repository = "https://github.com/jmer-consulting/qa-autopilot"
-Issues = "https://github.com/jmer-consulting/qa-autopilot/issues"
-Documentation = "https://github.com/jmer-consulting/qa-autopilot#readme"
+Homepage = "https://github.com/julienmerconsulting/qa-autopilot"
+Repository = "https://github.com/julienmerconsulting/qa-autopilot"
+Issues = "https://github.com/julienmerconsulting/qa-autopilot/issues"
+Documentation = "https://github.com/julienmerconsulting/qa-autopilot#readme"
 
 [project.entry-points.pytest11]
 qa-autopilot = "qa_autopilot"
@@ -54,7 +63,8 @@ qa-autopilot = "qa_autopilot:main"
 
 [tool.setuptools]
 py-modules = ["qa_autopilot"]
+license-files = []
 
 [tool.pytest.ini_options]
-addopts = "-v"
+addopts = "--tb=no -q"
 testpaths = ["tests"]

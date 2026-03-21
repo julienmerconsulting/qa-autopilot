@@ -1,0 +1,11 @@
+# Dépendances principales
+playwright>=1.40.0
+openai>=1.0.0
+
+# Optionnel — chargement automatique du .env
+python-dotenv>=1.0.0
+
+# Tests
+pytest>=8.0.0
+pytest-playwright>=0.4.0
+pytest-html>=4.0.0

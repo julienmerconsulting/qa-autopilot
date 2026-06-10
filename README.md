@@ -1,8 +1,9 @@
 <div align="center">
 
-# 🚀 QA Autopilot
+# 🚀 QA Autopilot — AI Diagnostic for Playwright Test Failures
 
-### Plugin pytest — Diagnostic IA des échecs Playwright en temps réel
+### pytest plugin — Real-time AI diagnosis of Playwright test failures
+### Multi-LLM (OpenAI · Anthropic · Ollama · DeepSeek) · GDPR by default · Open source
 
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![PyPI](https://img.shields.io/badge/PyPI-qa--autopilot-blue?style=for-the-badge&logo=pypi&logoColor=white)](https://pypi.org/project/qa-autopilot/)
@@ -17,73 +18,73 @@
 [Installation](#-installation) •
 [Quick Start](#-quick-start) •
 [Scorecard](#-scorecard) •
-[Comment ça marche](#-comment-ça-marche) •
+[How it works](#-how-it-works) •
 [Configuration](#-configuration)
 
 </div>
 
 ---
 
-## 🎯 Le problème
+## 🎯 The problem
 
-Un test Playwright échoue. Le message d'erreur dit :
+A Playwright test fails. The error message says:
 
 ```
 TimeoutError: Page.click: Timeout 5000ms exceeded.
 waiting for locator("a[href='/international/']")
 ```
 
-Le sélecteur est bon. L'élément existe. **Alors pourquoi ça marche pas ?**
+The selector is correct. The element exists. **So why isn't it working?**
 
-Parce que le bandeau cookies recouvre tout. Ou parce que l'élément est dans un iframe. Ou parce que le DOM a été rechargé en AJAX. Ou parce que le bouton est `disabled`. Ou parce que tu fais un `click()` au lieu d'un `dblclick()`.
+Because the cookie banner is covering everything. Or the element is inside an iframe. Or the DOM was reloaded via AJAX. Or the button is `disabled`. Or you used `click()` instead of `dblclick()`.
 
-**QA Autopilot diagnostique la vraie cause en une seule commande.**
+**QA Autopilot tells you the real cause in a single command.**
 
 ---
 
 ## 📊 Scorecard
 
-Résultats sur une suite de **7 tests pièges** conçus pour piéger les outils de diagnostic :
+Results on a suite of **7 trap tests** specifically designed to fool diagnostic tools:
 
-| Test | Piège | Diagnostic IA | Catégorie | Confiance |
+| Test | Trap | AI Diagnosis | Category | Confidence |
 |:-----|:------|:-------------|:----------|:---------:|
-| 🫣 Overlay cookies | Élément recouvert par bandeau | ✅ Bandeau cookies bloque le click | `element_obscured` | 🟢 95% |
-| 🖼️ Iframe invisible | Élément dans iframe, cherché dans main frame | ✅ Contexte iframe manquant | `iframe_context` | 🟢 95% |
-| 👻 Stale AJAX | Locator capturé avant rechargement DOM | ✅ Référence obsolète après AJAX | `stale_reference` | 🟢 95% |
-| ↪️ Redirect silencieux | URL redirigée 301/302 | ✅ Test PASSED (piège détecté) | — | ✅ |
-| 🚫 Bouton disabled | Élément visible mais disabled | ✅ Attribut disabled détecté | `element_disabled` | 🟢 95% |
-| 🔤 Regex Unicode | `Zinedine` vs `Zinédine` | ✅ Mismatch accent dans regex | `encoding_mismatch` | 🟢 95% |
-| 🫣 Double-click | Consent manager intercepte le click | ✅ Overlay détecté | `element_obscured` | 🟢 95% |
+| 🫣 Cookie overlay | Element covered by banner | ✅ Cookie banner blocks the click | `element_obscured` | 🟢 95% |
+| 🖼️ Invisible iframe | Element inside iframe, searched in main frame | ✅ Missing iframe context | `iframe_context` | 🟢 95% |
+| 👻 Stale AJAX | Locator captured before DOM reload | ✅ Stale reference after AJAX | `stale_reference` | 🟢 95% |
+| ↪️ Silent redirect | URL redirected 301/302 | ✅ Test PASSED (trap detected) | — | ✅ |
+| 🚫 Disabled button | Element visible but disabled | ✅ Disabled attribute detected | `element_disabled` | 🟢 95% |
+| 🔤 Unicode regex | `Zinedine` vs `Zinédine` | ✅ Regex accent mismatch | `encoding_mismatch` | 🟢 95% |
+| 🫣 Double-click | Consent manager intercepts click | ✅ Overlay detected | `element_obscured` | 🟢 95% |
 
-> **6/6 diagnostics corrects à 95% de confiance** — le 7ème test PASSED (pas de diagnostic nécessaire).
+> **6/6 correct diagnoses at 95% confidence** — the 7th test PASSED (no diagnosis needed).
 
 ---
 
 ## ⚠️ Limitations
 
 > [!CAUTION]
-> **Tests de +200 lignes :** le contexte envoyé à l'IA est volontairement tronqué.
-> Un test E2E doit rester court — un scénario, une responsabilité, moins de 50 lignes.
-> Au-delà, c'est un problème de conception, pas de diagnostic.
-> Refactorisez vos tests avant de chercher la cause d'un échec.
+> **Tests over 200 lines:** the context sent to the AI is intentionally truncated.
+> An E2E test should stay short — one scenario, one responsibility, under 50 lines.
+> Beyond that, it's a design problem, not a diagnostic problem.
+> Refactor your tests before looking for the cause of a failure.
 
 ## 📦 Installation
 
-**QA Autopilot est un module Python natif — disponible directement sur PyPI :**
+**QA Autopilot is a native Python module — available directly on PyPI:**
 
 ```bash
 pip install qa-autopilot
 ```
 
-C'est tout. Pas de config, pas de serveur, pas de compte. Une ligne.
+That's it. No config, no server, no account. One line.
 
-Avec le chargement automatique du `.env` :
+With automatic `.env` loading:
 
 ```bash
 pip install qa-autopilot[dotenv]
 ```
 
-Ou depuis les sources :
+Or from source:
 
 ```bash
 git clone https://github.com/julienmerconsulting/qa-autopilot.git
@@ -91,26 +92,26 @@ cd qa-autopilot
 pip install -e .
 ```
 
-### Prérequis
+### Prerequisites
 
 ```bash
 playwright install chromium
 ```
 
-### Configuration `.env`
+### `.env` configuration
 
-Crée un fichier `.env` à la racine de ton projet :
+Create a `.env` file at the root of your project:
 
 ```bash
-# OpenAI (défaut)
+# OpenAI (default)
 OPENAI_API_KEY=sk-...
 
-# Ou DeepSeek
+# Or DeepSeek
 BASE_URL=https://api.deepseek.com
 API_KEY=sk-...
 QA_MODEL=deepseek-chat
 
-# Ou Ollama local (zéro coût)
+# Or local Ollama (zero cost)
 BASE_URL=http://localhost:11434/v1
 API_KEY=ollama
 QA_MODEL=llama3
@@ -120,23 +121,23 @@ QA_MODEL=llama3
 
 ## ⚡ Quick Start
 
-### Mode pytest (recommandé)
+### pytest mode (recommended)
 
-Ajoute un seul flag à ta commande pytest :
+Add a single flag to your pytest command:
 
 ```bash
 pytest tests/ --qa-autopilot -v
 ```
 
-C'est tout. Chaque test en échec reçoit un diagnostic IA automatique.
+That's it. Every failing test gets an automatic AI diagnosis.
 
-### Avec rapport HTML
+### With HTML report
 
 ```bash
-pytest tests/ --qa-autopilot --html=qa-reports/rapport.html --self-contained-html -v
+pytest tests/ --qa-autopilot --html=qa-reports/report.html --self-contained-html -v
 ```
 
-### Mode standalone
+### Standalone mode
 
 ```bash
 python -m qa_autopilot tests/test_checkout.py
@@ -144,18 +145,18 @@ python -m qa_autopilot tests/test_login.py::test_auth
 python -m qa_autopilot tests/ -k "checkout" --headed
 ```
 
-### Mode import direct
+### Direct import mode
 
 ```python
 from qa_autopilot import QAInterceptor
 
-# Dans ton test
+# Inside your test
 interceptor = QAInterceptor(page)
 interceptor.start()
 
-# ... ton test ...
+# ... your test ...
 
-# En cas d'échec
+# On failure
 diagnosis = interceptor.diagnose(error_message, "test_file.py")
 print(diagnosis["root_cause"])
 print(diagnosis["category"])
@@ -163,11 +164,11 @@ print(diagnosis["category"])
 
 ---
 
-## 🔍 Comment ça marche
+## 🔍 How it works
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    TON TEST PLAYWRIGHT               │
+│                YOUR PLAYWRIGHT TEST                  │
 │                                                      │
 │   page.goto("https://example.com")                  │
 │   page.click("#submit")           ← FAIL            │
@@ -176,13 +177,13 @@ print(diagnosis["category"])
                        │
          ┌─────────────▼─────────────┐
          │    QA AUTOPILOT HOOK      │
-         │   (écoute en parallèle)   │
+         │   (listens in parallel)   │
          └─────────────┬─────────────┘
                        │
     ┌──────────────────┼──────────────────┐
     ▼                  ▼                  ▼
 ┌────────┐      ┌──────────┐      ┌───────────┐
-│  DOM   │      │ RÉSEAU   │      │ CONSOLE   │
+│  DOM   │      │ NETWORK  │      │ CONSOLE   │
 │Listener│      │ Capture  │      │ Capture   │
 │  (JS)  │      │ req/res  │      │ err/warn  │
 └───┬────┘      └────┬─────┘      └─────┬─────┘
@@ -190,102 +191,187 @@ print(diagnosis["category"])
     └────────────────┼───────────────────┘
                      │
          ┌───────────▼───────────┐
-         │   BUNDLE CONTEXTE     │
-         │  code + erreur + DOM  │
-         │  + réseau + console   │
+         │   CONTEXT BUNDLE      │
+         │  code + error + DOM   │
+         │  + network + console  │
          │  + screenshot (opt)   │
          └───────────┬───────────┘
                      │
          ┌───────────▼───────────┐
-         │    UN PROMPT → IA     │
-         │   (12 catégories)     │
-         │   diagnostic + fix    │
+         │    ONE PROMPT → AI    │
+         │   (12 categories)     │
+         │   diagnosis + fix     │
          └───────────┬───────────┘
                      │
     ┌────────────────┼────────────────┐
     ▼                ▼                ▼
 ┌────────┐    ┌───────────┐    ┌──────────┐
 │Terminal│    │   JSON    │    │  Jira    │
-│ Output │    │  Report   │    │ (si bug) │
+│ Output │    │  Report   │    │ (if bug) │
 └────────┘    └───────────┘    └──────────┘
 ```
 
-### Pipeline en 5 étapes
+### 5-step pipeline
 
-1. **Hook transparent** — Se branche sur la page Playwright via les events natifs
-2. **Capture en parallèle** — DOM (listener JS injecté), réseau, console, screenshots
-3. **Détection d'échec** — Le hook pytest intercepte le `FAILED`
-4. **Bundle + Prompt** — Tout le contexte part en UN appel IA
-5. **Diagnostic** — Cause racine + catégorie + fix concret + rapport JSON
+1. **Transparent hook** — Plugs into the Playwright page via native events
+2. **Parallel capture** — DOM (injected JS listener), network, console, screenshots
+3. **Failure detection** — The pytest hook intercepts the `FAILED` status
+4. **Bundle + Prompt** — All context goes out in ONE AI call
+5. **Diagnosis** — Root cause + category + concrete fix + JSON report
 
 ---
 
-## 🏷️ Les 12 catégories de diagnostic
+## 🏷️ The 12 diagnosis categories
 
-| Icône | Catégorie | Description |
-|:-----:|:----------|:------------|
-| 🎯 | `wrong_selector` | Sélecteur cassé, inexistant ou trop large |
-| ⏭️ | `missing_step` | Étape manquante (cookies, goto, dropdown) |
-| ⏱️ | `timing` | Race condition, élément pas encore prêt |
-| 🫣 | `element_obscured` | Élément recouvert par overlay/modal/bannière |
-| 🚫 | `element_disabled` | Élément trouvé mais désactivé |
-| 🔀 | `wrong_action` | Mauvaise méthode (click vs dblclick, fill vs type) |
-| 🖼️ | `iframe_context` | Élément cherché dans le mauvais frame |
-| 🔤 | `encoding_mismatch` | Problème Unicode/accents/regex |
-| 👻 | `stale_reference` | Locator obsolète après changement DOM |
-| 📊 | `test_data` | Assertion avec mauvaise valeur attendue |
-| 🐛 | `app_bug` | Bug applicatif (pas le test) → génère un ticket Jira |
-| 🌐 | `network` | Requêtes réseau en échec (4xx/5xx) |
+| Icon | Category | Description |
+|:----:|:---------|:------------|
+| 🎯 | `wrong_selector` | Broken, missing, or too-broad selector |
+| ⏭️ | `missing_step` | Missing step (cookies, goto, dropdown) |
+| ⏱️ | `timing` | Race condition, element not ready yet |
+| 🫣 | `element_obscured` | Element covered by overlay/modal/banner |
+| 🚫 | `element_disabled` | Element found but disabled |
+| 🔀 | `wrong_action` | Wrong method (click vs dblclick, fill vs type) |
+| 🖼️ | `iframe_context` | Element searched in the wrong frame |
+| 🔤 | `encoding_mismatch` | Unicode/accent/regex issue |
+| 👻 | `stale_reference` | Stale locator after DOM change |
+| 📊 | `test_data` | Assertion with wrong expected value |
+| 🐛 | `app_bug` | Application bug (not the test) → generates a Jira ticket |
+| 🌐 | `network` | Failed network requests (4xx/5xx) |
 
 ---
 
 ## ⚙️ Configuration
 
-### Variables d'environnement
+### Environment variables
 
-| Variable | Défaut | Description |
-|:---------|:-------|:------------|
-| `OPENAI_API_KEY` | *(obligatoire si pas de API_KEY)* | Clé API OpenAI |
-| `API_KEY` | *(optionnel)* | Clé pour provider alternatif (DeepSeek, Ollama…) |
-| `BASE_URL` | `None` (OpenAI natif) | URL base du provider LLM |
-| `QA_MODEL` | `gpt-4.1-mini` | Modèle IA à utiliser |
-| `QA_SCREENSHOT` | `0` | `1` pour inclure les screenshots dans le prompt |
-| `QA_REPORT_DIR` | `qa-reports/` | Dossier des rapports |
+| Variable | Default | Description |
+|:---------|:--------|:------------|
+| `OPENAI_API_KEY` | *(required if no API_KEY)* | OpenAI API key |
+| `API_KEY` | *(optional)* | Key for alternative provider (DeepSeek, Ollama…) |
+| `BASE_URL` | `None` (native OpenAI) | LLM provider base URL |
+| `QA_MODEL` | `gpt-4.1-mini` | AI model to use |
+| `QA_SCREENSHOT` | `0` | `1` to include screenshots in the prompt |
+| `QA_REPORT_DIR` | `qa-reports/` | Reports directory |
+| `QA_REDACT_INPUTS` | `1` | Auto-redaction of sensitive fields (password, credit card, tokens, IBAN…). `0` to disable (not recommended). |
 
-### Arguments pytest
+### pytest arguments
 
 ```bash
-pytest tests/ --qa-autopilot          # Active le diagnostic IA
-pytest tests/ --qa-autopilot --headed # Avec navigateur visible
-pytest tests/ --qa-autopilot -k "login" # Filtrer par keyword
+pytest tests/ --qa-autopilot          # Enable AI diagnosis
+pytest tests/ --qa-autopilot --headed # With visible browser
+pytest tests/ --qa-autopilot -k "login" # Filter by keyword
 ```
 
 ---
 
-## 📁 Structure des rapports
+## 📁 Report structure
 
 ```
 qa-reports/
-├── summary_20260223_014751.json       # Rapport consolidé du run
-├── diag_test_casse_20260223_014713.json  # Diagnostic individuel
-├── diag_test_casse_20260223_014659.json
-├── jira_test_casse_20260223_014659.md    # Ticket Jira (si app_bug)
-└── rapport.html                          # Rapport HTML pytest
+├── summary_20260223_014751.json          # Consolidated run report
+├── diag_test_broken_20260223_014713.json # Individual diagnosis
+├── diag_test_broken_20260223_014659.json
+├── jira_test_broken_20260223_014659.md   # Jira ticket (if app_bug)
+└── report.html                           # pytest HTML report
 ```
 
-### Exemple de rapport consolidé
+### Consolidated report example
 
 ```json
 [
   {
-    "test": "test_element_cache_par_overlay[chromium]",
+    "test": "test_element_covered_by_overlay[chromium]",
     "category": "element_obscured",
     "confidence": 0.95,
-    "root_cause": "L'élément ciblé est recouvert par le bandeau cookies",
-    "suggested_fix": "Fermer le bandeau cookies avant de cliquer"
+    "root_cause": "The target element is covered by the cookie banner",
+    "suggested_fix": "Close the cookie banner before clicking"
   }
 ]
 ```
+
+---
+
+## 🔒 Security & GDPR
+
+QA Autopilot **automatically** redacts sensitive data before any LLM call. This protection is **enabled by default** (`QA_REDACT_INPUTS=1`) and operates on **two fronts**:
+
+### 1. Browser-side redaction (DOM listener)
+
+Values typed into sensitive fields are intercepted **inside the browser**, in the `saveEntry()` function of the JS listener, and replaced with `[REDACTED]` **before** any storage. The real value never leaves the browser.
+
+| Detection criteria | Examples |
+|:-------------------|:---------|
+| HTML `type` | `password`, `email`, `tel` |
+| `name`/`id` contains | `password`, `passwd`, `pwd`, `secret`, `token`, `cvv`, `card`, `ssn`, `auth`, `pin`, `api_key`, `credit`, `iban`, `bic`, `swift`, `client_secret` |
+| `placeholder` / `aria-label` contains | same patterns |
+| `autocomplete` | `current-password`, `new-password`, `cc-*` (credit card) |
+
+### 2. Source code redaction (before LLM call)
+
+The test `.py` file is also scanned and hardcoded credentials are redacted:
+
+- `page.fill("#password", "...")` / `.type()` / `.press_sequentially()` / `.input_value()` on sensitive selectors
+- Python variables: `password = "..."`, `token = "..."`, `api_key = "..."`, `client_secret = "..."`, `access_token = "..."`, etc.
+- `os.environ["PASSWORD"] = "..."` (direct assignment)
+
+When a redaction is applied, qa-autopilot prints a warning:
+
+```
+⚠️  Hardcoded credentials detected in test_login.py, redacted before LLM call.
+    Best practice: use os.environ or pytest fixtures for secrets.
+```
+
+### What does the LLM see?
+
+```
+CAPTURED DOM ACTIONS (3 total)
+  1. INPUT ✅ #username = 'john.doe@example.com'
+  2. INPUT ✅ #password = [REDACTED — sensitive field]
+  3. CLICK ✅ button[type="submit"] (text: 'Login')
+
+TEST CODE
+def test_login(page):
+    page.fill("#username", "john.doe@example.com")
+    page.fill("#password", "[REDACTED]")
+    page.click("button[type='submit']")
+```
+
+The LLM is explicitly informed in the prompt that `[REDACTED]` does **not** mean an empty or broken field, but a GDPR protection. The diagnosis is performed without knowing the real value.
+
+### How to verify redaction works?
+
+```bash
+# Run a test that types a password
+pytest tests/test_login.py --qa-autopilot
+
+# Check the JSON report — you should see [REDACTED] everywhere
+grep -i "password\|REDACTED" qa-reports/diag_*.json
+```
+
+For the ultra-paranoid: intercept outgoing traffic with `mitmproxy` and verify that requests to `api.openai.com` never contain your real sensitive value.
+
+### Data sent to the LLM
+
+| Data | Sent | Redactable |
+|:-----|:----:|:----------:|
+| Test source code (3000 chars max) | ✅ | ✅ **by default** (regex on fill/assign/env) |
+| Playwright error message | ✅ | ❌ |
+| Element selectors | ✅ | ❌ |
+| Input values (DOM listener) | ✅ | ✅ **by default** (6-criteria cascade) |
+| Page URL | ✅ | ❌ |
+| Console errors | ✅ | ❌ |
+| 4xx/5xx request bodies (truncated) | ✅ | ❌ |
+| Screenshots | only if `QA_SCREENSHOT=1` | n/a |
+
+### Disabling redaction (not recommended)
+
+For the rare cases where the content of a "sensitive" field is legitimately useful to see (false positive on a field name containing `auth` but not actually authentication-related):
+
+```bash
+QA_REDACT_INPUTS=0 pytest tests/ --qa-autopilot
+```
+
+> ⚠️ **Use only with fictional test data.** When in doubt, keep redaction enabled. Redaction is not an excuse to hardcode credentials: it doesn't catch every exotic case (variables with invented names, concatenated values, etc.). The golden rule remains: **never hardcode secrets**.
 
 ---
 
@@ -294,80 +380,84 @@ qa-reports/
 ```
 qa-autopilot/
 ├── qa_autopilot/
-│   ├── __init__.py          # Exports publics
+│   ├── __init__.py          # Public exports
 │   ├── core.py              # QAInterceptor + capture
-│   ├── prompt.py            # Prompt v2 (12 catégories)
-│   ├── diagnose.py          # Appel IA + retry + JSON mode
-│   ├── reporter.py          # Rapports JSON + Jira markdown
-│   ├── listener.js          # DOM listener (injection navigateur)
-│   └── plugin.py            # Hooks pytest
+│   ├── prompt.py            # Prompt v2 (12 categories)
+│   ├── diagnose.py          # AI call + retry + JSON mode
+│   ├── reporter.py          # JSON + Jira markdown reports
+│   ├── listener.js          # DOM listener (browser injection)
+│   └── plugin.py            # pytest hooks
 ├── tests/
-│   ├── test_casse.py        # Suite de tests pièges
+│   ├── test_traps.py        # Trap test suite
 │   └── conftest.py
 ├── examples/
-│   └── standalone.py        # Exemple d'utilisation directe
+│   └── standalone.py        # Direct usage example
 ├── pyproject.toml
 ├── LICENSE
 └── README.md
 ```
 
-> **Note :** La version actuelle est un fichier monolithique `qa_autopilot.py` (~600 lignes).
-> Le découpage ci-dessus est la cible pour la v2.
+> **Note:** The current version is a monolithic `qa_autopilot.py` file (~600 lines).
+> The structure above is the target for v2.
 
 ---
 
-## 🆚 Pourquoi pas les alternatives ?
+## 🆚 Why not the alternatives?
 
-| | QA Autopilot | Playwright MCP (23K lignes) | SaaS (Testim, Mabl...) |
+| | QA Autopilot | Playwright MCP (23K lines) | SaaS (Testim, Mabl...) |
 |:--|:--|:--|:--|
-| **Lignes de code** | ~600 | 23 000+ | Fermé |
-| **Installation** | `pip install` | MCP server + config | Compte + licence |
-| **Config** | 1 flag | 32 outils MCP | Dashboard + intégration |
-| **Prix** | Gratuit + clé OpenAI | Gratuit | 200-500€/mois/user |
-| **Diagnostic** | 12 catégories, 95% | Basique | Variable |
-| **Vendor lock-in** | Zéro | MCP protocol | Total |
+| **Lines of code** | ~600 | 23,000+ | Closed |
+| **Installation** | `pip install` | MCP server + config | Account + license |
+| **Config** | 1 flag | 32 MCP tools | Dashboard + integration |
+| **Price** | Free + OpenAI key | Free | $200-500/month/user |
+| **Diagnosis** | 12 categories, 95% | Basic | Variable |
+| **Vendor lock-in** | None | MCP protocol | Total |
 
 ---
 
-## 🛠️ DOM Listener — Cascade 6 tiers
+## 🛠️ DOM Listener — 6-tier cascade
 
-Le listener JavaScript injecté dans le navigateur utilise une cascade de sélecteurs en 6 niveaux, du plus stable au moins stable :
+The JavaScript listener injected into the browser uses a 6-level selector cascade, from most stable to least stable:
 
-| Tier | Stratégie | Exemple |
-|:----:|:----------|:--------|
+| Tier | Strategy | Example |
+|:----:|:---------|:--------|
 | 1 | `data-testid` / `id` / `name` | `[data-testid="submit-btn"]` |
-| 2 | `aria-label` / `placeholder` / `title` | `[aria-label="Fermer"]` |
-| 3 | `href` (liens) | `a[href="/checkout"]` |
-| 4 | Parent avec attribut stable | `[data-testid="form"] button` |
-| 5 | Label associé (inputs) | `//label[contains(text(),"Email")]//input` |
-| 6 | CSS court + `nth-of-type` | `button.primary:nth-of-type(2)` |
+| 2 | `aria-label` / `placeholder` / `title` | `[aria-label="Close"]` |
+| 3 | `href` (links) | `a[href="/checkout"]` |
+| 4 | Parent with stable attribute | `[data-testid="form"] button` |
+| 5 | Associated label (inputs) | `//label[contains(text(),"Email")]//input` |
+| 6 | Short CSS + `nth-of-type` | `button.primary:nth-of-type(2)` |
 
-Chaque sélecteur est validé pour son unicité dans le DOM. Support Shadow DOM inclus.
+Every selector is validated for uniqueness in the DOM. Shadow DOM support included.
 
 ---
 
 ## 🤝 Contributors
 
-| Contributeur | Contribution |
-|:-------------|:-------------|
-| [Julien Mer](https://github.com/julienmerconsulting) | Auteur original |
-| [@szwnba](https://github.com/szwnba) | Support multi-provider LLM (DeepSeek, Ollama) + traduction CN |
+| Contributor | Contribution |
+|:------------|:-------------|
+| [Julien Mer](https://github.com/julienmerconsulting) | Original author |
+| [@szwnba](https://github.com/szwnba) | Multi-provider LLM support (DeepSeek, Ollama) + CN translation |
 
-Les contributions sont bienvenues — issues, bug reports, pull requests.
+Contributions are welcome — issues, bug reports, pull requests.
+
+---
+
+<sub>**Tags:** pytest plugin · playwright · playwright-python · ai testing · llm · openai · anthropic · deepseek · ollama · mistral · groq · self-healing tests · root cause analysis · test debugging · qa automation · gdpr · rgpd · data protection · multi-llm · open source qa</sub>
 
 ---
 
 ## 📄 License
 
-MIT — Fais-en ce que tu veux.
+MIT — Do whatever you want with it.
 
 ---
 
 <div align="center">
 
-**Créé par [Julien Mer](https://www.linkedin.com/in/julienmer/) — JMer Consulting**
+**Created by [Julien Mer](https://www.linkedin.com/in/julienmer/) — JMer Consulting**
 
-*QA Architect · 20+ ans d'expérience · Katalon Top Partner Europe*
+*QA Architect · 20+ years experience · Katalon Top Partner Europe*
 
 [![Newsletter](https://img.shields.io/badge/Newsletter-Bonnes_Pratiques_QA-blue?style=flat-square)](https://cleanqa.substack.com)
 ![QA OPS LAB](https://img.shields.io/badge/QA_OPS_LAB-Coming%20Soon-orange?style=flat-square)

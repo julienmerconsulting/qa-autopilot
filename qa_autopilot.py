@@ -79,6 +79,59 @@ from typing import Optional
 LLM_MODEL = os.getenv("QA_MODEL", "gpt-4.1-mini")  # ou deepseek-chat, ollama, etc.
 INCLUDE_SCREENSHOT = os.getenv("QA_SCREENSHOT", "0") == "1"
 REPORT_DIR = Path(os.getenv("QA_REPORT_DIR", "qa-reports"))
+# Redaction des champs sensibles (mots de passe, CB, tokens, etc.)
+# Active par defaut. Mettre QA_REDACT_INPUTS=0 pour desactiver (deconseille).
+# Couvre : (1) les valeurs tapees dans les champs sensibles cote navigateur
+#          (2) les credentials hardcodes dans le code source du test
+REDACT_INPUTS = os.getenv("QA_REDACT_INPUTS", "1") != "0"
+
+import re as _re
+
+_SOURCE_REDACT_PATTERNS = [
+    # page.fill("...password...", "VALEUR") / .type() / .press_sequentially() / .input_value()
+    (_re.compile(
+        r'(\.(?:fill|type|press_sequentially|input_value)\s*\(\s*["\'][^"\']*'
+        r'(?:password|secret|token|cvv|card|pin|api[_-]?key|credit|iban|bic|swift|auth|ssn|passwd|pwd)'
+        r'[^"\']*["\']\s*,\s*["\'])([^"\']*)(["\'])',
+        _re.IGNORECASE
+    ), r'\1[REDACTED]\3'),
+
+    # PASSWORD = "VALEUR" / token = "VALEUR" / API_KEY = "VALEUR" en variables Python
+    (_re.compile(
+        r'((?:^|\s)(?:password|passwd|pwd|secret|token|api[_-]?key|cvv|card|credit|iban|'
+        r'auth_token|access_token|refresh_token|client_secret|private_key)'
+        r'\s*=\s*["\'])([^"\']*)(["\'])',
+        _re.IGNORECASE | _re.MULTILINE
+    ), r'\1[REDACTED]\3'),
+
+    # os.environ["PASSWORD"] = "VALEUR" (cas pathologique mais ca existe)
+    (_re.compile(
+        r'(os\.environ\s*\[\s*["\'][^"\']*'
+        r'(?:password|secret|token|key|cvv|card|credit|iban)[^"\']*'
+        r'["\']\s*\]\s*=\s*["\'])([^"\']*)(["\'])',
+        _re.IGNORECASE
+    ), r'\1[REDACTED]\3'),
+]
+
+
+def redact_source(source: str) -> str:
+    """
+    Redacte les credentials hardcodes dans le code source avant envoi au LLM.
+    Couvre :
+      - .fill("#password", "...") / .type() / .press_sequentially() / .input_value()
+      - PASSWORD = "..." / api_key = "..." / token = "..." en variables Python
+      - os.environ["PASSWORD"] = "..." (assignation directe)
+
+    N'attrape pas tous les cas exotiques (variables aux noms inventes,
+    valeurs concatenees dynamiquement). La bonne pratique reste : jamais
+    de secret en dur dans le code, utiliser os.environ ou des fixtures.
+    """
+    if not REDACT_INPUTS or not source:
+        return source
+    redacted = source
+    for pattern, replacement in _SOURCE_REDACT_PATTERNS:
+        redacted = pattern.sub(replacement, redacted)
+    return redacted
 
 # Langue des diagnostics IA
 # QA_LANG=off       → le LLM décide seul (anglais par défaut)
@@ -288,9 +341,29 @@ DOM_LISTENER_JS = """
         });
     }, true);
 
+    // Redaction des champs sensibles (RGPD/securite) — actif par defaut
+    // La valeur n'est JAMAIS stockee dans localStorage si le champ est sensible
+    function shouldRedact(el) {
+        if (window.__qaRedactDisabled === true) return false;
+        if (!el || !el.getAttribute) return false;
+        var t = (el.getAttribute('type') || '').toLowerCase();
+        if (['password','email','tel'].indexOf(t) !== -1) return true;
+        var pattern = /password|passwd|pwd|secret|token|cvv|card|ssn|auth|pin|api[_-]?key|credit|iban|bic|swift|client[_-]?secret/i;
+        if (pattern.test(el.name || '')) return true;
+        if (pattern.test(el.id || '')) return true;
+        if (pattern.test(el.getAttribute('placeholder') || '')) return true;
+        if (pattern.test(el.getAttribute('aria-label') || '')) return true;
+        var au = (el.getAttribute('autocomplete') || '').toLowerCase();
+        if (pattern.test(au) || au.indexOf('cc-') === 0 || au === 'current-password' || au === 'new-password') return true;
+        return false;
+    }
+
     document.addEventListener('input', (e) => {
         let el = getRealTarget(e), sel = getBestSelector(el);
-        saveEntry({ action:'input', timestamp:Date.now(), tag:el.tagName, value:el.value||'',
+        let isRedacted = shouldRedact(el);
+        let safeValue = isRedacted ? '[REDACTED]' : (el.value||'');
+        saveEntry({ action:'input', timestamp:Date.now(), tag:el.tagName, value:safeValue,
+            redacted: isRedacted,
             selector:sel, url:location.href, inShadowDOM:sel.inShadowDOM,
             attributes:{ id:el.id||null, name:el.getAttribute?el.getAttribute('name'):null,
                 type:el.getAttribute?el.getAttribute('type'):null, placeholder:el.getAttribute?el.getAttribute('placeholder'):null,
@@ -387,14 +460,19 @@ class QAInterceptor:
         self._started = True
         self._start_time = time.time()
 
+        # Si la redaction est desactivee explicitement (QA_REDACT_INPUTS=0),
+        # on signale au listener via window.__qaRedactDisabled = true
+        kill_switch = "window.__qaRedactDisabled = true; " if not REDACT_INPUTS else ""
+        listener_js = kill_switch + DOM_LISTENER_JS
+
         # Injecter le DOM listener
         try:
-            self.page.evaluate(DOM_LISTENER_JS)
+            self.page.evaluate(listener_js)
         except Exception:
             pass  # page pas encore chargée, on injecte via add_init_script
 
         # Réinjecter sur chaque navigation
-        self.page.context.add_init_script(DOM_LISTENER_JS)
+        self.page.context.add_init_script(listener_js)
 
         # Capturer le réseau
         self.page.on("request", self._on_request)
@@ -532,9 +610,15 @@ class QAInterceptor:
             except Exception:
                 pass
 
+        # Redaction des credentials hardcodes dans le code source (RGPD)
+        test_source_safe = redact_source(test_source)
+        if REDACT_INPUTS and test_source_safe != test_source:
+            print(f"\n  ⚠️  Credentials hardcodes detectes dans {Path(test_file).name}, redactes avant envoi LLM.")
+            print(f"      Bonne pratique : utilise os.environ ou pytest fixtures pour les secrets.")
+
         ctx = FailureContext(
             test_file=test_file,
-            test_source=test_source,
+            test_source=test_source_safe,
             error_message=error_message,
             error_traceback=error_tb,
             dom_actions=self.get_dom_log()[:MAX_DOM_ACTIONS],
@@ -773,7 +857,10 @@ def ai_diagnose(ctx: FailureContext) -> dict:
                 txt = a.get("text", "")[:40]
                 steps.append(f"  {i+1}. CLICK {unique} {sel} (texte: '{txt}')")
             elif a["action"] == "input":
-                steps.append(f"  {i+1}. INPUT {unique} {sel} = '{a.get('value', '')}'")
+                if a.get("redacted"):
+                    steps.append(f"  {i+1}. INPUT {unique} {sel} = [REDACTED — champ sensible]")
+                else:
+                    steps.append(f"  {i+1}. INPUT {unique} {sel} = '{a.get('value', '')}'")
             elif a["action"] == "scroll":
                 steps.append(f"  {i+1}. SCROLL {a.get('direction', '?')} {a.get('deltaY', 0)}px")
         dom_summary = "\n".join(steps)
@@ -828,6 +915,16 @@ REQUÊTES RÉSEAU EN ÉCHEC ({len(ctx.failed_requests)})
 ERREURS CONSOLE ({len(ctx.console_errors)})
 ═══════════════════════════════════════════════════════════════
 {console_summary if console_summary else '[aucune erreur console]'}
+
+═══════════════════════════════════════════════════════════════
+NOTE SUR LES CHAMPS REDACTÉS
+═══════════════════════════════════════════════════════════════
+Certaines valeurs peuvent apparaître comme [REDACTED — champ sensible] dans
+les actions DOM, ou comme [REDACTED] dans le code source du test.
+qa-autopilot a détecté un champ sensible (password, email, token, CB, IBAN…)
+ou un credential hardcodé, et a masqué la valeur AVANT envoi au LLM (RGPD).
+NE considère PAS qu'un champ redacté est vide ou cassé : il a bien été rempli
+côté navigateur. Le diagnostic doit se faire SANS connaître la valeur réelle.
 
 ═══════════════════════════════════════════════════════════════
 GUIDE DE DIAGNOSTIC — LIS ATTENTIVEMENT AVANT DE RÉPONDRE

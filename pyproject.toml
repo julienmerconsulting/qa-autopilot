@@ -4,30 +4,79 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qa-autopilot"
-version = "1.2.0"
-description = "AI-powered diagnostic for Playwright test failures — ~600 lines replace 23K lines of MCP"
+version = "1.2.3"
+description = "AI-powered diagnostic for failing Playwright tests — multi-LLM, RGPD-friendly, open source. Detects root cause in seconds."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.9"
 authors = [
     {name = "Julien Mer", email = "contact@julienmerconsulting.com"},
 ]
-keywords = ["qa", "testing", "playwright", "automation", "ai", "diagnostic", "pytest"]
+keywords = [
+    "pytest",
+    "pytest-plugin",
+    "playwright",
+    "playwright-python",
+    "testing",
+    "test-automation",
+    "e2e",
+    "end-to-end",
+    "qa",
+    "quality-assurance",
+    "ai",
+    "llm",
+    "gpt",
+    "openai",
+    "anthropic",
+    "deepseek",
+    "ollama",
+    "mistral",
+    "groq",
+    "diagnosis",
+    "diagnostic",
+    "debugging",
+    "test-debugging",
+    "self-healing",
+    "test-failures",
+    "root-cause-analysis",
+    "rgpd",
+    "gdpr",
+    "privacy",
+    "redaction",
+    "data-protection",
+]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Framework :: Pytest",
     "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Testing :: Acceptance",
+    "Topic :: Software Development :: Testing :: BDD",
+    "Topic :: Software Development :: Testing :: Unit",
     "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Debuggers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Utilities",
+    "Environment :: Console",
+    "Environment :: Plugins",
+    "Environment :: Web Environment",
+    "Natural Language :: English",
+    "Natural Language :: French",
+    "Natural Language :: Chinese (Simplified)",
 ]
-
 dependencies = [
     "playwright>=1.40.0",
     "openai>=1.0.0",
@@ -50,10 +99,13 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/julienmerconsulting/qa-autopilot"
+Homepage = "https://qa-julienmer-course.pages.dev/"
 Repository = "https://github.com/julienmerconsulting/qa-autopilot"
 Issues = "https://github.com/julienmerconsulting/qa-autopilot/issues"
-Documentation = "https://github.com/julienmerconsulting/qa-autopilot#readme"
+Documentation = "https://qa-julienmer-course.pages.dev/"
+Changelog = "https://github.com/julienmerconsulting/qa-autopilot/blob/main/CHANGELOG.md"
+"Source Code" = "https://github.com/julienmerconsulting/qa-autopilot"
+"Bug Tracker" = "https://github.com/julienmerconsulting/qa-autopilot/issues"
 
 [project.entry-points.pytest11]
 qa-autopilot = "qa_autopilot"

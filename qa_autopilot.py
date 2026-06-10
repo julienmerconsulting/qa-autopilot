@@ -111,6 +111,19 @@ _SOURCE_REDACT_PATTERNS = [
         r'["\']\s*\]\s*=\s*["\'])([^"\']*)(["\'])',
         _re.IGNORECASE
     ), r'\1[REDACTED]\3'),
+
+    # Playwright locator chains :
+    # page.get_by_label("Password").fill("xxx") / get_by_placeholder("IBAN").fill(...)
+    # get_by_role / get_by_test_id / get_by_alt_text / get_by_title chained with .fill / .type / etc.
+    # Style recommande par la doc Playwright officielle depuis 2023.
+    (_re.compile(
+        r'(get_by_(?:label|placeholder|test_id|role|alt_text|title)\s*\(\s*["\'][^"\']*'
+        r'(?:password|secret|token|cvv|card|pin|api[_-]?key|credit|iban|bic|swift|'
+        r'mot[_\s]?de[_\s]?passe|carte|confidentiel)'
+        r'[^"\']*["\']\s*\)[^.]*\.(?:fill|type|press_sequentially|input_value)\s*\(\s*["\'])'
+        r'([^"\']*)(["\'])',
+        _re.IGNORECASE
+    ), r'\1[REDACTED]\3'),
 ]
 
 

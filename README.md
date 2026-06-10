@@ -11,7 +11,7 @@
 [![LLM](https://img.shields.io/badge/LLM-OpenAI%20%7C%20DeepSeek%20%7C%20Ollama-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com)
 [![pytest](https://img.shields.io/badge/pytest-Plugin-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)](https://pytest.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
-[![Lines](https://img.shields.io/badge/Lines_of_Code-~600-brightgreen?style=for-the-badge)]()
+[![Lines](https://img.shields.io/badge/Lines_of_Code-~1250-brightgreen?style=for-the-badge)]()
 
 <br/>
 
@@ -373,6 +373,17 @@ QA_REDACT_INPUTS=0 pytest tests/ --qa-autopilot
 
 > ⚠️ **Use only with fictional test data.** When in doubt, keep redaction enabled. Redaction is not an excuse to hardcode credentials: it doesn't catch every exotic case (variables with invented names, concatenated values, etc.). The golden rule remains: **never hardcode secrets**.
 
+### Known limitations — documented residual risk
+
+The browser-side listener catches **runtime values typed in real fields** regardless of how the test addresses them (type / name / placeholder / aria-label / autocomplete). The source-side regex catches the most common patterns (`page.fill("#password", ...)`, `PASSWORD = "..."`, `get_by_label("Password").fill(...)`, `get_by_placeholder("IBAN").fill(...)`). However, two specific patterns of **hardcoded credentials in the test source** are not currently caught:
+
+| Pattern | Example | Status |
+|---|---|---|
+| Nested quotes from Playwright codegen | `page.fill("[name='cvv']", "123")` | Tracked as `xfail` in `tests/test_redaction.py` |
+| Page Object Model — locator declared as class attribute, `.fill()` called elsewhere | `PASSWORD_INPUT = "#password"` ... `page.fill(PASSWORD_INPUT, secret)` | Tracked as `xfail` in `tests/test_redaction.py` |
+
+In both cases the **runtime values typed in the browser are still protected** by the browser listener. The leak only affects **values hardcoded in the source code** (which is bad practice anyway — use `os.environ` or pytest fixtures). The `xfail` tests make the residual risk **visible and tracked** so any future fix will be verified.
+
 ---
 
 ## 🏗️ Architecture
@@ -397,7 +408,7 @@ qa-autopilot/
 └── README.md
 ```
 
-> **Note:** The current version is a monolithic `qa_autopilot.py` file (~600 lines).
+> **Note:** The current version is a monolithic `qa_autopilot.py` file (~1250 lines).
 > The structure above is the target for v2.
 
 ---
@@ -406,7 +417,7 @@ qa-autopilot/
 
 | | QA Autopilot | Playwright MCP (23K lines) | SaaS (Testim, Mabl...) |
 |:--|:--|:--|:--|
-| **Lines of code** | ~600 | 23,000+ | Closed |
+| **Lines of code** | ~1,250 | 23,000+ | Closed |
 | **Installation** | `pip install` | MCP server + config | Account + license |
 | **Config** | 1 flag | 32 MCP tools | Dashboard + integration |
 | **Price** | Free + OpenAI key | Free | $200-500/month/user |
